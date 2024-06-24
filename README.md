@@ -29,7 +29,7 @@ MenuMingle is an innovative restaurant website designed as a personal project to
 - **Front-End:** React
 - **Back-End:** Django
 - **Database:** SQLite
-- **Other Tools:** Git, GitHub, [any other relevant tools]
+- **Other Tools:** Git, GitHub
 
 ## Getting Started
 
