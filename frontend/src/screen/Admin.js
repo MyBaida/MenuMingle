@@ -72,7 +72,7 @@ const AdminDashboard = ({ onChange }) => {
     }}
     onClick={returnHandler}
     >
-        BushKe
+        MenuMingle
     </h4>
 </div>
 
