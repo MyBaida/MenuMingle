@@ -100,7 +100,7 @@ const fetchTables = async () => {
     return (
       <div>
         {cartItems.length !== 0 ?
-        <Header/> : <h5 onClick={returnHandler} className='empty-cart-logo'>BushKe</h5>}
+        <Header/> : <h5 onClick={returnHandler} className='empty-cart-logo'>MenuMingle</h5>}
         <div className='cart-content'>
           <Col>
             <Row >
