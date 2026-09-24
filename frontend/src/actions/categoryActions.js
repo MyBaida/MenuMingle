@@ -129,7 +129,7 @@ export const deleteCategory = (id) => async (dispatch) => {
           }
       }
 
-      const { data } = await axios.delete(
+      await axios.delete(
           `/api/categories/delete/${id}/`,
           config
       )
@@ -248,7 +248,7 @@ export const deleteTable = (id) => async (dispatch) => {
           }
       }
 
-      const { data } = await axios.delete(
+      await axios.delete(
           `/api/menuItems/table/delete/${id}/`,
           config
       )

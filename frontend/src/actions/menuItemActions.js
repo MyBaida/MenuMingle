@@ -17,17 +17,11 @@ import {
     MENUITEM_CREATE_REQUEST,
     MENUITEM_CREATE_SUCCESS,
     MENUITEM_CREATE_FAIL,
-    MENUITEM_CREATE_RESET,
 
 
     MENUITEM_UPDATE_REQUEST,
     MENUITEM_UPDATE_SUCCESS,
     MENUITEM_UPDATE_FAIL,
-
-
-    MENUITEM_PROMO_REQUEST,
-    MENUITEM_PROMO_SUCCESS,
-    MENUITEM_PROMO_FAIL,
 } from  '../constants/menuItemConstants'
 
 
@@ -93,7 +87,7 @@ export const deleteMenuItem = (id) => async (dispatch) => {
             }
         }
 
-        const {data} = await axios.delete(
+        await axios.delete(
             `/api/menuItems/delete/${id}/`,
             config
         )

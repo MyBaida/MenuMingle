@@ -17,7 +17,6 @@ import App from './App';
 import reportWebVitals from './reportWebVitals'; // Import reportWebVitals
 
 import './css/index.css';
-import { BrowserRouter } from 'react-router-dom';
 
 import axios from 'axios';
 import { API_BASE_URL } from './config';

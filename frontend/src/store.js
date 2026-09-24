@@ -1,9 +1,9 @@
 
 
 import { configureStore } from '@reduxjs/toolkit';
-import { menuItemListReducer, menuItemDetailsReducer, menuItemDeleteReducer, menuItemCreateReducer, menuItemUpdateReducer, menuItemPromoReducer } from './reducers/menuItemReducers';
+import { menuItemListReducer, menuItemDetailsReducer, menuItemDeleteReducer, menuItemCreateReducer, menuItemUpdateReducer } from './reducers/menuItemReducers';
 import { categoryListReducer, categoryDetailsReducer, categoryMenuItemsReducer, categoryDeleteReducer, categoryCreateReducer, categoryUpdateReducer } from './reducers/categoryReducers';
-import { tableDetailsReducer, tableMenuItemsReducer, tableDeleteReducer, tableCreateReducer, tableUpdateReducer } from './reducers/categoryReducers';
+import { tableDetailsReducer, tableDeleteReducer, tableCreateReducer, tableUpdateReducer } from './reducers/categoryReducers';
 import { adminLoginReducer } from './reducers/adminReducers';
 import { cartReducer } from './reducers/cartReducers';
 import { orderDetailsReducer, orderCreateReducer } from './reducers/orderReducers';
