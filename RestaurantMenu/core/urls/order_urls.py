@@ -5,5 +5,6 @@ urlpatterns = [
 
     path('', getOrders, name='orders'),
     path('add/', addOrderItems, name='orders-add'),
+    path('<str:pk>/status/', updateOrderStatus, name='order-status'),
 
 ]

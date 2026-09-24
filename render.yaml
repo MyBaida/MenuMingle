@@ -1,0 +1,37 @@
+# Render Blueprint — Served backend (Django + DRF) on the free plan.
+#
+# The Django project lives in RestaurantMenu/ (manage.py, requirements.txt).
+# SQLite is used on the instance's ephemeral disk, so `bootstrap` re-creates and
+# re-seeds the database on EVERY cold start / deploy (see core/management/
+# commands/bootstrap.py). Data entered at runtime (orders, admin edits) resets
+# when the free instance spins down; the seeded menu + demo admin always return.
+#
+# Deploy: push this repo to GitHub, then on Render create a "Blueprint" and
+# point it at the repository. Render reads this file automatically.
+
+services:
+  - type: web
+    name: served-backend
+    runtime: python
+    plan: free
+    rootDir: RestaurantMenu
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: python manage.py bootstrap && gunicorn RestaurantMenu.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: DJANGO_DEBUG
+        value: "False"
+      # Render generates a strong random secret once and reuses it across deploys
+      # (so existing JWTs stay valid).
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      # Optional hardening. Leave unset for the open demo:
+      #   DJANGO_ALLOWED_HOSTS defaults to ['*']; CORS defaults to allow-all.
+      # Set them in the Render dashboard once you know your URLs, e.g.
+      #   DJANGO_ALLOWED_HOSTS = served-backend.onrender.com
+      #   CORS_ALLOWED_ORIGINS = https://served.vercel.app
+      - key: DJANGO_ALLOWED_HOSTS
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false

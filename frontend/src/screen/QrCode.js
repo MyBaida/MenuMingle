@@ -1,31 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from '../components/Sidebar';
-import QRCode from 'qrcode.react';
-import { Button, Row, Col } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { QRCodeCanvas } from 'qrcode.react';
+import AdminLayout from '../components/AdminLayout';
+import { BsPrinter } from 'react-icons/bs';
+import { apiUrl } from '../config';
 
 const QrCode = () => {
-  const [openSidebarToggle, setOpenSidebarToggle] = useState(false);
   const [tables, setTables] = useState([]);
-  const [qrCodeValues, setQRCodeValues] = useState([]);
-
-  const userInfo = useSelector(state => state.adminLogin.userInfo)
-  const navigate = useNavigate()
+  const userInfo = useSelector((state) => state.adminLogin.userInfo);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!userInfo || !userInfo.isAdmin) {
-        navigate('/admin/login')
-    }else{
-        fetchTables();  
+      navigate('/admin/login');
+    } else {
+      fetchTables();
     }
-   
-  }, [userInfo, navigate]
-  );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userInfo, navigate]);
 
   const fetchTables = async () => {
     try {
-      const response = await fetch('/api/menuItems/tables');
+      const response = await fetch(apiUrl('/api/menuItems/tables'));
       if (response.ok) {
         const data = await response.json();
         setTables(data);
@@ -37,58 +34,35 @@ const QrCode = () => {
     }
   };
 
-  const OpenSidebar = () => {
-    setOpenSidebarToggle(!openSidebarToggle);
-  };
-
-  const generateQRCode = () => {
-    const homeURL = window.location.origin; // Get the home screen URL
-    const qrCodes = tables.map(table => `${homeURL}/table/${table._id}`);
-    setQRCodeValues(qrCodes);
-  };
-
-  const printQRCode = () => {
-    
-    window.print();
-  };
+  const homeURL = window.location.origin;
 
   return (
-    
-    <div className="grid-container">
-  <Sidebar openSidebarToggle={openSidebarToggle} OpenSidebar={OpenSidebar} />
-  <div className="content-container">
-    <Row className="align-items-center justify-content-center">
-      <Col className="text-center">
-        {/* <h1>QR Code</h1> */}
-        <Button className="my-3" onClick={generateQRCode}>
-          Generate QR Codes
-        </Button>
-      </Col>
-    </Row>
-
-    {qrCodeValues.length > 0 && (
-      <div className='qrcode-container'>
-        {qrCodeValues.map((qrCodeValue, index) => (
-          <div key={index} className="qrcode-detail" >
-            <div className="table-name">
-              QRCode for Table {tables[index].name}
+    <AdminLayout
+      title="QR Codes"
+      action={
+        tables.length > 0 ? (
+          <button className="btn-primary print:hidden" onClick={() => window.print()}>
+            <BsPrinter className="h-4 w-4" /> Print All
+          </button>
+        ) : null
+      }
+    >
+      {tables.length === 0 ? (
+        <div className="panel py-16 text-center text-sm text-slate-400">No tables to generate codes for.</div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {tables.map((table) => (
+            <div key={table._id} className="panel flex flex-col items-center text-center">
+              <h3 className="text-base font-semibold capitalize text-slate-900">{table.name}</h3>
+              <div className="mt-4 rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+                <QRCodeCanvas value={`${homeURL}/table/${table._id}`} size={180} />
+              </div>
+              <p className="mt-4 text-xs text-slate-400">Scan to order</p>
             </div>
-            <div className="qr-code-container">
-              <QRCode value={qrCodeValue} size={180} />
-            </div>
-            
-          </div>
-        ))}
-        <div className="print">
-          <Button className="my-3" onClick={printQRCode}>
-            Print QR Codes
-          </Button>
+          ))}
         </div>
-      </div>
-    )}
-  </div>
-</div>
-
+      )}
+    </AdminLayout>
   );
 };
 

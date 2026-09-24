@@ -1,197 +1,112 @@
-import React, { useState, useEffect } from 'react'; 
-import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom'; 
-import { Form, Button, Row, Col, Image } from 'react-bootstrap'; 
-import { useDispatch, useSelector } from 'react-redux'; 
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import Loader from '../components/Loader';
 import Message from '../components/Message';
-import FormContainer from '../components/FormContainer';
+import AdminLayout from '../components/AdminLayout';
 import { createMenuItem } from '../actions/menuItemActions';
 import { listCategories } from '../actions/categoryActions';
-import { MENUITEM_CREATE_RESET } from '../constants/menuItemConstants';
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
+function MenuItemCreateScreen() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-function MenuItemCreateScreen() { 
-    const navigate = useNavigate(); 
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [category, setCategory] = useState('');
+  const [description, setDescription] = useState('');
+  const [duration, setDuration] = useState('');
 
-    const [name, setName] = useState(''); 
-    const [price, setPrice] = useState(''); 
-    const [image, setImage] = useState(''); 
-    const [category, setCategory] = useState(''); 
-    const [description, setDescription] = useState(''); 
-    const [duration, setDuration] = useState(''); 
-    const [uploading, setUploading] = useState(false);
+  const categoryList = useSelector((state) => state.categoryList);
+  const { loading: categoriesLoading, error: categoriesError, categories } = categoryList;
 
-    const dispatch = useDispatch(); 
+  const menuItemCreate = useSelector((state) => state.menuItemCreate);
+  const { loading: loadingCreate, error: errorCreate, success: successCreate, menuItem: createdMenuItem } = menuItemCreate;
 
-    const categoryList = useSelector(state => state.categoryList); 
-    const { loading: categoriesLoading, error: categoriesError, categories } = categoryList; 
+  const userInfo = useSelector((state) => state.adminLogin.userInfo);
 
-    const menuItemCreate = useSelector(state => state.menuItemCreate);
-    const { loading: loadingCreate, error: errorCreate, success: successCreate, menuItem: createdMenuItem  } = menuItemCreate;
+  useEffect(() => {
+    dispatch(listCategories());
+    if (successCreate) {
+      navigate('/admin/menuItemlist');
+    }
+  }, [dispatch, navigate, successCreate, createdMenuItem]);
 
-    const userInfo = useSelector(state => state.adminLogin.userInfo)
+  useEffect(() => {
+    if (!userInfo || !userInfo.isAdmin) {
+      navigate('/admin/login');
+    }
+  }, [userInfo, navigate]);
 
-    useEffect(() => {
-        dispatch(listCategories());
-        if (successCreate) {
-            navigate(`/admin/menuItemlist`); 
-        } 
-    }, [dispatch, navigate, successCreate, createdMenuItem]);
+  const submitHandler = (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('price', price);
+    formData.append('category', category);
+    formData.append('description', description);
+    formData.append('cooking_duration', duration);
+    dispatch(createMenuItem(formData));
+  };
 
-    useEffect(() => {
-        if (!userInfo || !userInfo.isAdmin) {
-            navigate('/admin/login')
-        }
-       
-      }, [userInfo, navigate]
-      );
+  return (
+    <AdminLayout title="Create Menu Item" backTo="/admin/menuItemlist">
+      <div className="mx-auto w-full max-w-xl">
+        <div className="panel">
+          {loadingCreate && <Loader />}
+          {errorCreate && (
+            <div className="mb-4">
+              <Message variant="danger">{errorCreate}</Message>
+            </div>
+          )}
 
-    const submitHandler = (e) => {    
-        e.preventDefault();
+          {categoriesLoading ? (
+            <Loader />
+          ) : categoriesError ? (
+            <Message variant="danger">{categoriesError}</Message>
+          ) : (
+            <form onSubmit={submitHandler} className="space-y-4">
+              <div>
+                <label className="label" htmlFor="name">Name</label>
+                <input id="name" type="text" className="input" placeholder="Dish name" value={name} onChange={(e) => setName(e.target.value)} required />
+              </div>
 
-        const formData = new FormData();
-        formData.append('name', name);
-        formData.append('price', price);
-        // formData.append('image', image);
-        formData.append('category', category);
-        formData.append('description', description);
-        formData.append('cooking_duration', duration);
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="label" htmlFor="price">Price (GH₵)</label>
+                  <input id="price" type="number" step="0.01" min="0" className="input" placeholder="0.00" value={price} onChange={(e) => setPrice(e.target.value)} required />
+                </div>
+                <div>
+                  <label className="label" htmlFor="duration">Cooking duration (mins)</label>
+                  <input id="duration" type="text" className="input" placeholder="e.g. 15" value={duration} onChange={(e) => setDuration(e.target.value)} />
+                </div>
+              </div>
 
-        dispatch(createMenuItem(formData));
-    };
+              <div>
+                <label className="label" htmlFor="category">Category</label>
+                <select id="category" className="input" value={category} onChange={(e) => setCategory(e.target.value)} required>
+                  <option value="">Select Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.name} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
 
-    // const uploadFileHandler = async (e) => {
-    //     const file = e.target.files[0];
-    //     const formData = new FormData();
-    
-    //     formData.append('image', file);
-    
-    //     setUploading(true);
-    
-    //     try {
-    //         const config = {
-    //             headers: {
-    //                 'Content-Type': 'multipart/form-data'
-    //             }
-    //         };
-    
-    //         const { data } = await axios.post('api/menuItems/create-upload', formData, config);
-    
-    //         setImage(data);
-    //         setUploading(false);
-    
-    //     } catch (error) {
-    //         setUploading(false);
-         
-    //     }
-    // };
-    
+              <div>
+                <label className="label" htmlFor="description">Description</label>
+                <textarea id="description" rows={4} className="input resize-y" placeholder="Short description" value={description} onChange={(e) => setDescription(e.target.value)} />
+              </div>
 
-    return ( 
-        <div> 
-            
-            <h3 className='logo'><Link to='/admin/menuItemlist' style={{margin:"5px",  textDecoration: 'none'}}>Go Back</Link></h3>
-
-            <FormContainer> 
-                <h1>Create Menu Item</h1> 
-                {loadingCreate && <Loader />}  
-                {errorCreate && <Message variant='danger'>{errorCreate}</Message>} 
-
-                { categoriesLoading ? ( 
-                    <Loader /> 
-                ) : categoriesError ? ( 
-                    <Message variant='danger'>{ categoriesError}</Message> 
-                ) : ( 
-                    <Form onSubmit={submitHandler}> 
-                        <Form.Group controlId='name'> 
-                            <Form.Label>Name</Form.Label> 
-                            <Form.Control 
-                                type='text' 
-                                placeholder='Enter name' 
-                                value={name} 
-                                onChange={(e) => setName(e.target.value)} 
-                            /> 
-                        </Form.Group> 
-
-                        <Form.Group controlId='price'> 
-                            <Form.Label>Price</Form.Label> 
-                            <Form.Control 
-                                type='number' 
-                                placeholder='Enter price' 
-                                value={price} 
-                                onChange={(e) => setPrice(e.target.value)} 
-                            /> 
-                        </Form.Group> 
-
-                        {/* <Form.Group controlId='formFile'>
-                            <Form.Label>Image</Form.Label>
-                            <Form.Control
-                                type='file'
-                                label='Upload image'
-                                custom
-                                className='image-file'
-                                placeholder='Upload Image'
-                                onChange={uploadFileHandler}
-                            />
-                            {uploading && <Loader />}
-                        </Form.Group> */}
-                    
-                         <Form.Group controlId='category'>
-                            <Form.Label>Category</Form.Label>
-                            <Form.Control
-                                as='select'
-                                value={category} 
-                                onChange={(e) => setCategory(e.target.value)}
-                            >
-                                <option value="">Select Category</option>
-                                {categories.map(cat => (
-                                    <option key={cat.name} value={cat.name}>{cat.name}</option>
-                                ))}
-                            </Form.Control>
-                        </Form.Group> 
-
-                        <Form.Group controlId='description'> 
-                            <Form.Label>Description</Form.Label> 
-                            <Form.Control 
-                                as='textarea' 
-                                rows={3}
-                                placeholder='Enter Description' 
-                                value={description} 
-                                onChange={(e) => setDescription(e.target.value)} 
-                            /> 
-                        </Form.Group>
-
-                        {/* <Form.Group controlId='description'> 
-                            <Form.Label>Description</Form.Label> 
-                            <CKEditor
-                                editor={ ClassicEditor }
-                                data={ description }
-                                onChange={ ( event, editor ) => {
-                                    const data = editor.getData();
-                                    setDescription(data);
-                                }}
-                            />
-                        </Form.Group> */}
-
-                        <Form.Group controlId='duration'> 
-                            <Form.Label>Duration</Form.Label> 
-                            <Form.Control 
-                                type='text' 
-                                placeholder='Enter Duration' 
-                                value={duration} 
-                                onChange={(e) => setDuration(e.target.value)} 
-                            /> 
-                        </Form.Group>
-
-                        <Button type='submit' variant='primary' className='my' style={{marginTop:'7px'}}>Create</Button> 
-                    </Form> 
-                 )}  
-            </FormContainer> 
-        </div> 
-    ); 
-} 
+              <div className="flex gap-3">
+                <button type="submit" className="btn-primary">Create</button>
+                <button type="button" className="btn-ghost" onClick={() => navigate('/admin/menuItemlist')}>Cancel</button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </AdminLayout>
+  );
+}
 
 export default MenuItemCreateScreen;

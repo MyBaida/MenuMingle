@@ -13,27 +13,42 @@ import { CART_ADD_ITEM,
 
 export const cartReducer = (state={cartItems:[]}, action) => {
     switch(action.type) {
-        case CART_ADD_ITEM: 
-            const item = action.payload
+        case CART_ADD_ITEM: {
+            // action.payload.qty is a DELTA (e.g. +1 to add one more, -1 to remove one).
+            const item = action.payload;
             const existItem = state.cartItems.find(x => x.menuItem === item.menuItem);
 
             if (existItem) {
-                return{
-                    ...state,
-                    cartItems: state.cartItems.map(x => 
-                        x.menuItem === existItem.menuItem ? item : x)
+                const newQty = existItem.qty + item.qty;
+
+                // Drop the line entirely if the quantity falls to zero or below.
+                if (newQty <= 0) {
+                    return {
+                        ...state,
+                        cartItems: state.cartItems.filter(x => x.menuItem !== item.menuItem),
+                    };
                 }
-            }else{
-                return{
+
+                return {
                     ...state,
-                    cartItems: [...state.cartItems, item]
-                }
+                    cartItems: state.cartItems.map(x =>
+                        x.menuItem === item.menuItem ? { ...x, qty: newQty } : x),
+                };
             }
 
-            case CART_REMOVE_ITEM:
-                return{
-                    ...state,
-                    cartItems:state.cartItems.filter(x=> x.menuItem !== action.payload)
+            // New line: ignore non-positive quantities.
+            if (item.qty <= 0) return state;
+
+            return {
+                ...state,
+                cartItems: [...state.cartItems, item],
+            };
+        }
+
+        case CART_REMOVE_ITEM:
+            return{
+                ...state,
+                cartItems:state.cartItems.filter(x=> x.menuItem !== action.payload)
                 }
 
     //        case CART_SAVE_SHIPPING_ADDRESS:

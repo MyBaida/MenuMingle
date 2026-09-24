@@ -30,7 +30,7 @@ import { CART_ADD_ITEM,
 //   };
   
 
-export const addToCart = (id, qty,fromHomeScreen) => async (dispatch, getState) => {
+export const addToCart = (id, qty) => async (dispatch, getState) => {
   try {
       const { data } = await axios.get(`/api/menuItems/${id}`);
       dispatch({
@@ -46,11 +46,6 @@ export const addToCart = (id, qty,fromHomeScreen) => async (dispatch, getState) 
 
       // Update localStorage after dispatching the action
       localStorage.setItem('cartItems', JSON.stringify(getState().cart.cartItems));
-
-      if (fromHomeScreen) {
-        window.alert('Item Added to cart');
-      }
-    //   window.alert('Item Added to cart')
   } catch (error) {
       console.error('Error adding to cart:', error);
   }

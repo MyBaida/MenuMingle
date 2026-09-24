@@ -1,83 +1,74 @@
-import React, { useEffect, useState } from 'react'
-import Sidebar from '../components/Sidebar';
-import { useNavigate } from 'react-router-dom'
-import { useDispatch, useSelector } from 'react-redux'
-import  '../css/style.css';
-import  '../screen/Styling';
-import CardStyling from '../screen/Styling';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import AdminLayout from '../components/AdminLayout';
+import CardStyling from './Styling';
 
-
+const presets = ['#f8fafc', '#fbf5f0', '#f0fdf4', '#eff6ff', '#fdf2f8', '#fefce8'];
 
 const AdminDashboard = ({ onChange }) => {
+  const navigate = useNavigate();
+  const userInfo = useSelector((state) => state.adminLogin.userInfo);
 
-
-  const [openSidebarToggle, setOpenSidebarToggle] = useState(false)
-
-  const OpenSidebar = () => {
-    setOpenSidebarToggle(!openSidebarToggle)
-  }
-
-  const navigate = useNavigate()
-  const dispatch = useDispatch()
-  const userInfo = useSelector(state => state.adminLogin.userInfo)
-
-    useEffect(() => {
+  useEffect(() => {
     if (!userInfo || !userInfo.isAdmin) {
-        navigate('/admin/login')
+      navigate('/admin/login');
     }
-    
-  }, [userInfo, navigate]
-  );
-
-  const returnHandler = (event) => {
-    navigate('/admin/home')
-  };
-
-
-
+  }, [userInfo, navigate]);
 
   const handleColorChange = (event) => {
     onChange(event.target.value);
   };
+
+  const current = localStorage.getItem('backgroundColor') || '#f8fafc';
+
   return (
-    <div className='grid-container' >
-      
-    <Sidebar openSidebarToggle={openSidebarToggle} OpenSidebar={OpenSidebar} />
-    <div style={{ marginLeft:'19%', marginTop:'2%' , display:'flex', justifyContent:'center'}}>
-    
-    <h2 style={{position: 'absolute', top: '40px'}}> Admin Panel</h2>
+    <AdminLayout title="Appearance">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="panel">
+          <h2 className="text-base font-semibold text-slate-900">Menu card style</h2>
+          <p className="mb-4 mt-1 text-sm text-slate-500">
+            Choose how dishes are displayed to customers.
+          </p>
+          <CardStyling />
+        </section>
 
-    <CardStyling />
-  
-      <div className='styling-card' style={{marginLeft:'70px'}}
->
-    <label htmlFor="colorPicker">Select Background Color:</label>
-    <input className='color'
-        type="color"
-        id="colorPicker"
-        onChange={handleColorChange}
-    />
-</div>
-</div>
+        <section className="panel">
+          <h2 className="text-base font-semibold text-slate-900">Background colour</h2>
+          <p className="mb-4 mt-1 text-sm text-slate-500">
+            Set the site-wide background tint.
+          </p>
 
+          <div className="flex items-center gap-4">
+            <input
+              type="color"
+              aria-label="Custom background colour"
+              defaultValue={current}
+              onChange={handleColorChange}
+              className="h-12 w-16 cursor-pointer rounded-lg border-0 bg-white p-1 ring-1 ring-inset ring-slate-200"
+            />
+            <code className="rounded-lg bg-slate-100 px-3 py-1.5 text-sm text-slate-600">{current}</code>
+          </div>
 
-<div>
-    <h4 style={{
-        position: 'absolute',
-        top: 10,
-        right: 10,
-        color: 'orange',
-        cursor: 'pointer', 
-        transition: 'color 0.3s' 
-    }}
-    onClick={returnHandler}
-    >
-        MenuMingle
-    </h4>
-</div>
-
-    
-  </div>
-)}
+          <div className="mt-5">
+            <p className="label">Presets</p>
+            <div className="flex flex-wrap gap-2">
+              {presets.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => onChange(color)}
+                  className="h-9 w-9 rounded-lg ring-1 ring-inset ring-slate-200 transition hover:scale-110"
+                  style={{ backgroundColor: color }}
+                  aria-label={`Use ${color}`}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+    </AdminLayout>
+  );
+};
 
 export default AdminDashboard;

@@ -92,6 +92,25 @@ def addOrderItems(request):
 @api_view(['GET'])
 # @permission_classes([IsAdminUser])
 def getOrders(request):
-    orders = Order.objects.all()
+    orders = Order.objects.all().order_by('-createdAt')
     serializer = OrderSerializer(orders, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['PUT'])
+# @permission_classes([IsAdminUser])
+def updateOrderStatus(request, pk):
+    try:
+        order = Order.objects.get(_id=pk)
+    except Order.DoesNotExist:
+        return Response({'detail': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    new_status = request.data.get('status')
+    if new_status not in ('pending', 'preparing', 'served'):
+        return Response({'detail': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+
+    order.status = new_status
+    order.save()
+
+    serializer = OrderSerializer(order, many=False)
     return Response(serializer.data)

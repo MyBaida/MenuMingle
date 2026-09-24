@@ -37,9 +37,16 @@ class Table(models.Model):
         return self.name
 
 class Order(models.Model):
+    STATUS_CHOICES = (
+        ("pending", "Pending"),
+        ("preparing", "Preparing"),
+        ("served", "Served"),
+    )
     table = models.ForeignKey(Table, on_delete=models.SET_NULL, null=True)
     totalPrice = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     createdAt = models.DateTimeField(auto_now_add=True)
+    updatedAt = models.DateTimeField(auto_now=True)
     _id = models.AutoField(primary_key=True, editable=False)
 
     def __str__(self):

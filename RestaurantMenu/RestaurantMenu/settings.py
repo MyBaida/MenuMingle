@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -21,12 +22,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-3i$tp6-$n7vtm95%-(h5w!cuo^qu$na9k#%e2^lw_*71x&clq6'
+# Overridden in production via the DJANGO_SECRET_KEY env var (see render.yaml).
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-3i$tp6-$n7vtm95%-(h5w!cuo^qu$na9k#%e2^lw_*71x&clq6',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DJANGO_DEBUG=False in production (render.yaml); defaults to True for local dev.
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+# Comma-separated list via DJANGO_ALLOWED_HOSTS (e.g. your-app.onrender.com).
+# Defaults to ['*'] so the free-tier demo works out of the box; restrict it in
+# production by setting DJANGO_ALLOWED_HOSTS.
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()
+] or ['*']
 
 
 # Application definition
@@ -82,6 +93,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -156,16 +168,38 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
-MEDIA_URL = '/images/'
+STATIC_URL = '/static/'
+
+# collectstatic target; served by WhiteNoise in production.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 STATICFILES_DIRS = [
     BASE_DIR / 'static'
 ]
 
-MEDIA_ROOT = 'static/images'
+# Media (seeded/uploaded images) live under static/images. In dev Django serves
+# them at /images/ (see urls.py). In production MEDIA_URL is nested under
+# /static/ so WhiteNoise serves them straight from the collected files.
+MEDIA_ROOT = BASE_DIR / 'static' / 'images'
+MEDIA_URL = '/images/' if DEBUG else '/static/images/'
 
-CORS_ALLOW_ALL_ORIGINS = True
+# WhiteNoise compresses + fingerprints collected static files in production.
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
+
+# CORS: allow-all in dev (and as a demo-friendly production fallback). To lock
+# production down, set CORS_ALLOWED_ORIGINS to the frontend URL(s), e.g.
+#   CORS_ALLOWED_ORIGINS=https://served.vercel.app
+CORS_ALLOWED_ORIGINS = [
+    o.strip() for o in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if o.strip()
+]
+CORS_ALLOW_ALL_ORIGINS = DEBUG or not CORS_ALLOWED_ORIGINS
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

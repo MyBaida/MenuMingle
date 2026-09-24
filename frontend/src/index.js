@@ -19,6 +19,12 @@ import reportWebVitals from './reportWebVitals'; // Import reportWebVitals
 import './css/index.css';
 import { BrowserRouter } from 'react-router-dom';
 
+import axios from 'axios';
+import { API_BASE_URL } from './config';
+
+// Point every axios call at the configured API host ('' in dev -> CRA proxy).
+axios.defaults.baseURL = API_BASE_URL;
+
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

@@ -1,94 +1,89 @@
-
-
-
-
 import React, { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-
-import { Form, Button } from 'react-bootstrap';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import Loader from '../components/Loader';
 import Message from '../components/Message';
-import FormContainer from '../components/FormContainer';
-import {listTableDetails,  updateTable } from '../actions/categoryActions';
+import AdminLayout from '../components/AdminLayout';
+import { listTableDetails, updateTable } from '../actions/categoryActions';
 import { TABLE_UPDATE_RESET } from '../constants/categoryConstants';
 
 function TableEditScreen() {
-    const { id } = useParams();
+  const { id } = useParams();
+  const [name, setName] = useState('');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-    const [name, setName] = useState('');
+  const tableDetails = useSelector((state) => state.tableDetails);
+  const { error: errorDetails, loading: loadingDetails, table: tableObj } = tableDetails;
 
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
+  const tableUpdate = useSelector((state) => state.tableUpdate);
+  const { error: errorUpdate, loading: loadingUpdate, success: successUpdate } = tableUpdate;
 
-    const tableDetails = useSelector(state => state.tableDetails);
-    const { error: errorDetails, loading: loadingDetails, table: tableObj } = tableDetails;
+  const userInfo = useSelector((state) => state.adminLogin.userInfo);
 
-    const tableUpdate = useSelector(state => state.tableUpdate);
-    const { error: errorUpdate, loading: loadingUpdate, success: successUpdate } = tableUpdate;
+  useEffect(() => {
+    if (successUpdate) {
+      dispatch({ type: TABLE_UPDATE_RESET });
+      navigate('/admin/tablelist');
+    } else if (!tableObj || tableObj._id !== Number(id)) {
+      dispatch(listTableDetails(id));
+    } else {
+      setName(tableObj.name);
+    }
+  }, [dispatch, tableObj, id, successUpdate, navigate]);
 
-    const userInfo = useSelector(state => state.adminLogin.userInfo)
+  useEffect(() => {
+    if (!userInfo || !userInfo.isAdmin) {
+      navigate('/admin/login');
+    }
+  }, [userInfo, navigate]);
 
-    useEffect(() => {
-        if (successUpdate) {
-            dispatch({ type: TABLE_UPDATE_RESET });
-            navigate('/admin/tablelist');
-        } else {
-            if (!tableObj || tableObj._id !== Number(id)) {
-                dispatch(listTableDetails(id));
-            } else {
-                setName(tableObj.name);
-            }
-        }
-    }, [dispatch, tableObj, id, successUpdate, navigate]);
+  const submitHandler = (e) => {
+    e.preventDefault();
+    dispatch(updateTable({ _id: id, name }));
+  };
 
-    useEffect(() => {
-        if (!userInfo || !userInfo.isAdmin) {
-            navigate('/admin/login')
-        }
-       
-      }, [userInfo, navigate]
-      );
+  return (
+    <AdminLayout title="Edit Table" backTo="/admin/tablelist">
+      <div className="mx-auto w-full max-w-xl">
+        <div className="panel">
+          {loadingUpdate && <Loader />}
+          {errorUpdate && (
+            <div className="mb-4">
+              <Message variant="danger">{errorUpdate}</Message>
+            </div>
+          )}
 
-    const submitHandler = (e) => {
-        e.preventDefault();
-        dispatch(updateTable({
-            _id: id,
-            name,
-        }));
-    };
-
-    return (
-        <div>
-            <h3 className='logo'><Link to='/admin/tablelist' style={{margin:"5px",  textDecoration: 'none'}}>Go Back</Link></h3>
-
-            <FormContainer>
-                <h1>Edit Table</h1>
-                {loadingUpdate && <Loader />}
-                {errorUpdate && <Message variant='danger'>{errorUpdate}</Message>}
-
-                {loadingDetails ? <Loader /> : errorDetails ? <Message variant='danger'>{errorDetails}</Message>
-                    : (
-                        <Form onSubmit={submitHandler}>
-
-                            <Form.Group controlId='name'>
-                                <Form.Label>Name</Form.Label>
-                                <Form.Control
-                                    type='name'
-                                    placeholder='Enter name'
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                />
-                            </Form.Group>
-
-                            <Button className='my' style={{marginTop:'7px'}} type='submit' variant='primary'>Update</Button>
-
-                        </Form>
-                    )}
-
-            </FormContainer>
+          {loadingDetails ? (
+            <Loader />
+          ) : errorDetails ? (
+            <Message variant="danger">{errorDetails}</Message>
+          ) : (
+            <form onSubmit={submitHandler} className="space-y-4">
+              <div>
+                <label className="label" htmlFor="name">Table name</label>
+                <input
+                  id="name"
+                  type="text"
+                  className="input"
+                  placeholder="Table name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex gap-3">
+                <button type="submit" className="btn-primary">Update</button>
+                <button type="button" className="btn-ghost" onClick={() => navigate('/admin/tablelist')}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
         </div>
-    );
+      </div>
+    </AdminLayout>
+  );
 }
 
 export default TableEditScreen;

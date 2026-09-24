@@ -1,143 +1,109 @@
-import React, { useState, useEffect } from 'react';
-import { LinkContainer } from 'react-router-bootstrap';
-import { useNavigate } from 'react-router-dom'; 
-import { Form, Button, Table, Row, Col } from 'react-bootstrap';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import Loader from '../components/Loader';
 import Message from '../components/Message';
-import { listCategories, deleteCategory,createCategory } from '../actions/categoryActions';
-import {CATEGORY_CREATE_RESET} from '../constants/categoryConstants';
-import '@fortawesome/fontawesome-free/css/all.min.css';
-import Sidebar from '../components/Sidebar';
+import AdminLayout from '../components/AdminLayout';
+import { listCategories, deleteCategory } from '../actions/categoryActions';
+import { BsPlus, BsPencil, BsTrash } from 'react-icons/bs';
 
 function CategoryListScreen() {
-    const dispatch = useDispatch();
-    const navigate = useNavigate(); 
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-    const categoryList = useSelector(state => state.categoryList);
-    const { loading, error, categories } = categoryList;
+  const categoryList = useSelector((state) => state.categoryList);
+  const { loading, error, categories } = categoryList;
 
-   
+  const categoryDelete = useSelector((state) => state.categoryDelete);
+  const { loading: loadingDelete, error: errorDelete, success: successDelete } = categoryDelete;
 
-    const categoryDelete = useSelector(state => state.categoryDelete);
-    const { loading: loadingDelete, error: errorDelete, success: successDelete  } = categoryDelete
+  const userInfo = useSelector((state) => state.adminLogin.userInfo);
 
-    // const categoryCreate = useSelector(state => state.categoryCreate);
-    // const { loading: loadingCreate, error: errorCreate, success: successCreate, category: createdCategory  } = categoryCreate
-
-    const userInfo = useSelector(state => state.adminLogin.userInfo)
-
-
-    const [openSidebarToggle, setOpenSidebarToggle] = useState(false)
-
-    const OpenSidebar = () => {
-      setOpenSidebarToggle(!openSidebarToggle)
+  useEffect(() => {
+    if (!userInfo || !userInfo.isAdmin) {
+      navigate('/admin/login');
+    } else {
+      dispatch(listCategories());
     }
+  }, [dispatch, navigate, successDelete, userInfo]);
 
-
-    useEffect(() => {
-
-      if (!userInfo || !userInfo.isAdmin) {
-        navigate('/admin/login')
-      }else{
-        dispatch(listCategories())
-      }
-    }, [dispatch, navigate, successDelete, userInfo]);
-    
-
-
-    const deleteHandler = (id) => {
-    if(window.confirm('Confirm deletion of category?'))
-        {
-            dispatch(deleteCategory(id))
-        }   
-    };
-
-
-    const createCategoryHandler = () =>{
-            // dispatch(createCategory())
-            navigate(`/admin/category/create`);
+  const deleteHandler = (id) => {
+    if (window.confirm('Confirm deletion of this category?')) {
+      dispatch(deleteCategory(id));
     }
+  };
 
   return (
-
-    <div className='grid-container'>
-    <Sidebar openSidebarToggle={openSidebarToggle} OpenSidebar={OpenSidebar}/>
-    
-  
-    <div className="category-list-container" style={{ marginLeft:'19%', marginTop:'2%' }}>
-      <Row className='aligh-items-center'>
-        <Col>
-            <Button className='my' onClick={createCategoryHandler}>
-                <i className='fas fa-plus' style={{'text-Decoration': 'underline'}}> </i>
-            </Button>
-        </Col>
-
-        <Col className='text-right'>
-            <h1> Categories</h1>
-        </Col>
-      </Row>
-
-      {loadingDelete && <Loader/>}
-      {errorDelete && <Message variant='danger'>{errorDelete}</Message>}
-
-     
-
-
-
-      {loading ? (
-        <Loader />
-      ) : error ? (
-        <Message variant='danger'>{error}</Message>
-      ) : (
-        <div className="table-container">
-        <Table striped border hover responsive className='table-sm'>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>NAME</th>
-              <th>ACTIONS</th>
-              
-            </tr>
-          </thead>
- 
-          <tbody>
-            {categories.map(category => (
-              
-              <tr key={category._id}>
-                <td>{category._id}</td>
-                <td>{category.name}</td>
-           
-
-                <td>
-                  <LinkContainer to={`/admin/category/${category._id}/edit`}>
-                    <Button variant='light' className='btn'>
-                      <i className='fas fa-edit' style={{color:'black'}}></i>
-                    </Button>
-                  </LinkContainer>
-
-                  <Button
-                    variant='danger'
-                    className='my'
-                    onClick={() => deleteHandler(category._id)}
-                  >
-                    <i className='fas fa-trash' ></i>
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
+    <AdminLayout
+      title="Categories"
+      action={
+        <button className="btn-primary" onClick={() => navigate('/admin/category/create')}>
+          <BsPlus className="h-4 w-4" /> New Category
+        </button>
+      }
+    >
+      {loadingDelete && <Loader />}
+      {errorDelete && (
+        <div className="mb-4">
+          <Message variant="danger">{errorDelete}</Message>
         </div>
       )}
-    </div>
-    </div>
+
+      {loading ? (
+        <Loader full />
+      ) : error ? (
+        <Message variant="danger">{error}</Message>
+      ) : !categories || categories.length === 0 ? (
+        <div className="panel py-16 text-center text-sm text-slate-400">No categories yet.</div>
+      ) : (
+        <div className="table-wrap overflow-x-auto">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categories.map((category) => (
+                <tr key={category._id}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-sm font-semibold text-brand-600">
+                        {category.name.charAt(0).toUpperCase()}
+                      </span>
+                      <div>
+                        <p className="font-medium capitalize text-slate-900">{category.name}</p>
+                        <p className="text-xs text-slate-400">#{category._id}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        className="btn-icon h-9 w-9 text-slate-500 ring-1 ring-inset ring-slate-200 hover:bg-slate-50 hover:text-slate-900 focus:ring-slate-300"
+                        onClick={() => navigate(`/admin/category/${category._id}/edit`)}
+                        aria-label={`Edit ${category.name}`}
+                      >
+                        <BsPencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        className="btn-icon h-9 w-9 text-rose-500 ring-1 ring-inset ring-rose-200 hover:bg-rose-50 focus:ring-rose-300"
+                        onClick={() => deleteHandler(category._id)}
+                        aria-label={`Delete ${category.name}`}
+                      >
+                        <BsTrash className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </AdminLayout>
   );
 }
- 
 
 export default CategoryListScreen;
-
-
-
-

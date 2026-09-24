@@ -28,4 +28,7 @@ urlpatterns = [
     path('api/orders/', include('core.urls.order_urls')),
 ]
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# In dev, serve uploaded/seeded media directly. In production WhiteNoise serves
+# both static and media (MEDIA_URL is nested under STATIC_URL), so this is a no-op.
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
