@@ -13,12 +13,16 @@ import Cat from '../components/Cat';
 import MobileOrderBar from '../components/MobileOrderBar';
 import { apiUrl } from '../config';
 
+const TABLE_CHECK_MAX_ATTEMPTS = 12;
+const TABLE_CHECK_RETRY_DELAY = 5000;
+
 const HomeScreen = () => {
   const dispatch = useDispatch();
   const { id } = useParams();
-  const [tableExists, setTableExists] = useState(false);
+  const [tableStatus, setTableStatus] = useState('loading');
   const [tableName, setTableName] = useState('');
   const [query, setQuery] = useState('');
+  const [retryKey, setRetryKey] = useState(0);
 
   const menuItemList = useSelector((state) => state.menuItemList);
   const { error, loading, menuItems } = menuItemList;
@@ -27,32 +31,105 @@ const HomeScreen = () => {
   const { categories } = categoryList;
 
   useEffect(() => {
-    fetchTables();
-    dispatch(listMenuItems());
-    dispatch(listCategories());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch]);
+    let cancelled = false;
+    let retryTimeout;
+    let cancelRetry;
+    let controller;
 
-  const fetchTables = async () => {
-    try {
-      const response = await fetch(apiUrl('/api/menuItems/tables'));
-      if (response.ok) {
-        const data = await response.json();
-        const match = data.find((table) => table._id === Number(id));
-        setTableExists(!!match);
-        if (match) {
-          localStorage.setItem('tableId', id);
-          setTableName(match.name || '');
+    const fetchTables = async () => {
+      setTableStatus('loading');
+      setTableName('');
+      let lastError;
+      const waitForRetry = () =>
+        new Promise((resolve) => {
+          cancelRetry = resolve;
+          retryTimeout = window.setTimeout(resolve, TABLE_CHECK_RETRY_DELAY);
+        });
+
+      for (let attempt = 0; attempt < TABLE_CHECK_MAX_ATTEMPTS; attempt += 1) {
+        controller = new AbortController();
+        let data;
+        try {
+          const response = await fetch(apiUrl('/api/menuItems/tables'), {
+            signal: controller.signal,
+          });
+          if (!response.ok) {
+            throw new Error(`Failed to fetch tables (${response.status})`);
+          }
+          data = await response.json();
+          if (!Array.isArray(data)) {
+            throw new Error('Invalid tables response');
+          }
+        } catch (requestError) {
+          if (cancelled) return;
+          lastError = requestError;
+          if (attempt < TABLE_CHECK_MAX_ATTEMPTS - 1) {
+            await waitForRetry();
+          }
+          continue;
         }
-      } else {
-        throw new Error('Failed to fetch tables');
-      }
-    } catch (error) {
-      console.error('Error fetching tables:', error);
-    }
-  };
 
-  if (!tableExists) {
+        if (cancelled) return;
+        const match = data.find((table) => table._id === Number(id));
+        if (!match) {
+          setTableStatus('notFound');
+          return;
+        }
+
+        setTableStatus('ready');
+        setTableName(match.name || '');
+        localStorage.setItem('tableId', id);
+        dispatch(listMenuItems());
+        dispatch(listCategories());
+        return;
+      }
+
+      if (!cancelled) {
+        console.error('Error fetching tables after retries:', lastError);
+        setTableStatus('error');
+      }
+    };
+
+    fetchTables();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(retryTimeout);
+      if (cancelRetry) cancelRetry();
+      if (controller) controller.abort();
+    };
+  }, [dispatch, id, retryKey]);
+
+  if (tableStatus === 'loading') {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-2 px-6 text-center">
+        <Loader label="Waking up the menu..." />
+        <p className="max-w-sm text-sm text-slate-500">
+          The demo server can take a little while to start after inactivity.
+        </p>
+      </div>
+    );
+  }
+
+  if (tableStatus === 'error') {
+    return (
+      <div
+        className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center"
+        role="alert"
+      >
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl">🍽️</span>
+        <h1 className="text-xl font-semibold text-slate-900">The menu is taking longer to load</h1>
+        <p className="max-w-sm text-sm text-slate-500">
+          The demo server did not respond yet. Please try again in a moment.
+        </p>
+        <button className="btn-primary" onClick={() => setRetryKey((key) => key + 1)}>
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (tableStatus === 'notFound') {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
         <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl">🍽️</span>
